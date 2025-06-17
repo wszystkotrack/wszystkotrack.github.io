@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Personal Health Tracker</title>
+    <!-- PWA Configuration for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Health Tracker">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/667eea/ffffff?text=HT">
+    <link rel="shortcut icon" href="https://placehold.co/180x180/667eea/ffffff?text=HT">
+    <link rel="manifest" href="/manifest.json">
+
+    <style>
+        /* Import modern fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* CSS Reset and global styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-radius: 16px;
+            --border-radius-lg: 24px;
+            --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --safe-area-left: env(safe-area-inset-left);
+            --safe-area-right: env(safe-area-inset-right);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+            padding-left: var(--safe-area-left);
+            padding-right: var(--safe-area-right);
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0 16px 32px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 32px 0;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin-top: 8px;
+        }
+
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+            text-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        /* Modern navigation */
+        .nav-container {
+            position: sticky;
+            top: var(--safe-area-top, 0);
+            z-index: 100;
+            margin: 0 -16px 24px;
+            padding: 0 16px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .nav {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 16px 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-btn {
+            flex-shrink: 0;
+            padding: 12px 20px;
+            background: var(--glass-bg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            white-space: nowrap;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn.active {
+            background: var(--success-gradient);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Sections with smooth animations */
+        .section {
+            display: none;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .section.active {
+            display: block;
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(32px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .section-header {
+            padding: 24px 24px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .section-content {
+            padding: 0 24px 24px;
+        }
+
+        /* Modern dashboard cards */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--success-gradient);
+            transform: scaleX(0);
+            transition: var(--transition);
+        }
+
+        .card:active {
+            transform: scale(0.98);
+        }
+
+        .card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card h3 {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Modern form styling */
+        .form-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--text-primary);
+            font-family: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input:focus, 
+        .form-group textarea:focus, 
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 48px;
+        }
+
+        /* Range inputs */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--success-gradient);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Modern buttons */
+        .btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-success {
+            background: var(--success-gradient);
+        }
+
+        .btn-danger {
+            background: var(--warning-gradient);
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        /* Entry cards */
+        .entries {
+            margin-top: 32px;
+        }
+
+        .entries h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .entry {
+            background: rgba(248, 250, 252, 0.8);
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: var(--border-radius);
+            border-left: 4px solid transparent;
+            background-image: linear-gradient(rgba(248, 250, 252, 0.8), rgba(248, 250, 252, 0.8)), var(--success-gradient);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .entry:active {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .entry-date {
+            font-weight: 600;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .entry p {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .entry strong {
+            color: var(--text-primary);
+        }
+
+        /* Analysis section */
+        .analysis {
+            background: linear-gradient(135deg, #fef7cd 0%, #fbbf24 100%);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            margin-top: 32px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .analysis h4 {
+            color: #92400e;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #ecfdf5 0%, #10b981 10%, #ecfdf5 100%);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .recommendation h5 {
+            color: #065f46;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        /* Responsive grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* No entries state */
+        .no-entries {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 48px 20px;
+            font-style: italic;
+        }
+
+        .no-entries::before {
+            content: '📝';
+            display: block;
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        /* Data management */
+        .data-management {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+        }
+
+        .data-management .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: var(--border-radius-lg);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            animation: modalSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-content h3 {
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+        }
+
+        /* Message styling */
+        .success, .error {
+            padding: 16px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-weight: 500;
+            border-left: 4px solid;
+        }
+
+        .success {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #065f46;
+            border-color: #10b981;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            color: #991b1b;
+            border-color: #ef4444;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 12px 24px;
+            }
+
+            .section-header, .section-content {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .stat {
+                font-size: 1.5rem;
+            }
+
+            .form-group input, 
+            .form-group textarea, 
+            .form-group select {
+                padding: 14px;
+            }
+
+            .btn {
+                padding: 14px 20px;
+            }
+
+            .data-management {
+                flex-direction: column;
+            }
+
+            .data-management .btn {
+                width: 100%;
+            }
+
+            .entry {
+                padding: 16px;
+            }
+
+            .modal-content {
+                padding: 24px;
+                margin: 0 12px;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 320px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --card-bg: rgba(30, 41, 59, 0.95);
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+            }
+
+            .card {
+                background: linear-gradient(135deg, #334155 0%, #475569 100%);
+            }
+
+            .entry {
+                background: rgba(51, 65, 85, 0.8);
+            }
+
+            .form-group input, 
+            .form-group textarea, 
+            .form-group select {
+                background: rgba(51, 65, 85, 0.8);
+                border-color: #475569;
+                color: #f1f5f9;
+            }
+
+            .modal-content {
+                background: #1e293b;
+                color: #f1f5f9;
+            }
+        }
+
+        /* iOS specific optimizations */
+        @supports (-webkit-touch-callout: none) {
+            .nav-btn, .btn {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+            }
+
+            input, textarea, select {
+                border-radius: var(--border-radius);
+                -webkit-appearance: none;
+            }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Loading states */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            color: var(--text-secondary);
+        }
+
+        .loading::before {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>💪 Personal Health Tracker</h1>
+            <p>Śledź swoje zdrowie i postępy w treningach</p>
+        </div>
+
+        <div class="nav-container">
+            <div class="nav">
+                <button class="nav-btn active" onclick="showSection('dashboard', this)">📊 Dashboard</button>
+                <button class="nav-btn" onclick="showSection('teeth', this)">🦷 Mycie zębów</button>
+                <button class="nav-btn" onclick="showSection('strength', this)">🏋️ Trening siłowy</button>
+                <button class="nav-btn" onclick="showSection('running', this)">🏃 Bieganie</button>
+                <button class="nav-btn" onclick="showSection('food', this)">🍎 Jedzenie</button>
+                <button class="nav-btn" onclick="showSection('notes', this)">📝 Notatki</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="section-header">
+                <h2>📊 Analiza i Podsumowanie</h2>
+            </div>
+            <div class="section-content">
+                <div class="dashboard">
+                    <div class="card">
+                        <h3>🦷 Higiena jamy ustnej</h3>
+                        <div class="stat" id="teethStreak">0</div>
+                        <div class="stat-label">dni z rzędu mycia zębów</div>
+                    </div>
+                    <div class="card">
+                        <h3>🏋️ Treningi siłowe</h3>
+                        <div class="stat" id="strengthCount">0</div>
+                        <div class="stat-label">treningów w tym miesiącu</div>
+                    </div>
+                    <div class="card">
+                        <h3>🏃 Bieganie</h3>
+                        <div class="stat" id="runningDistance">0</div>
+                        <div class="stat-label">km w tym miesiącu</div>
+                    </div>
+                    <div class="card">
+                        <h3>📝 Notatki</h3>
+                        <div class="stat" id="notesCount">0</div>
+                        <div class="stat-label">notatek dodanych</div>
+                    </div>
+                </div>
+                
+                <div class="analysis">
+                    <h4>🤖 Analiza AI</h4>
+                    <div id="aiAnalysis" class="loading">Ładowanie analizy...</div>
+                    
+                    <div class="recommendation">
+                        <h5>💡 Rekomendacje</h5>
+                        <div id="recommendations" class="loading">Przygotowywanie rekomendacji...</div>
+                    </div>
+                </div>
+
+                <div class="data-management">
+                    <button class="btn btn-success" onclick="exportData()">📤 Exportuj dane</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+                    <button class="btn btn-success" onclick="document.getElementById('importFile').click()">📥 Importuj dane</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teeth Brushing Section -->
+        <div id="teeth" class="section">
+            <div class="section-header">
+                <h2>🦷 Śledzenie mycia zębów</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="teethDateTime">Data i godzina mycia:</label>
+                        <input type="datetime-local" id="teethDateTime">
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="teethTime">Pora dnia:</label>
+                            <select id="teethTime">
+                                <option value="rano">Rano</option>
+                                <option value="wieczorem">Wieczorem</option>
+                                <option value="po posiłku">Po posiłku</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="teethDuration">Czas mycia (minuty):</label>
+                            <input type="number" id="teethDuration" min="1" max="10" value="2">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="teethNotes">Notatki:</label>
+                        <textarea id="teethNotes" placeholder="np. użycie nici dentystycznej, płukanka..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-full" onclick="addTeethEntry()">✅ Dodaj wpis</button>
+                
+                <div class="entries">
+                    <h3>Ostatnie wpisy</h3>
+                    <div id="teethEntries"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strength Training Section -->
+        <div id="strength" class="section">
+            <div class="section-header">
+                <h2>🏋️ Trening siłowy</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="strengthDate">Data treningu:</label>
+                            <input type="date" id="strengthDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="strengthDuration">Czas treningu (minuty):</label>
+                            <input type="number" id="strengthDuration" min="15" max="300">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="strengthMuscles">Partie mięśniowe:</label>
+                        <select id="strengthMuscles" multiple>
+                            <option value="klatka">Klatka piersiowa</option>
+                            <option value="plecy">Plecy</option>
+                            <option value="ramiona">Ramiona</option>
+                            <option value="nogi">Nogi</option>
+                            <option value="brzuch">Brzuch</option>
+                            <option value="biceps">Biceps</option>
+                            <option value="triceps">Triceps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="strengthExercises">Ćwiczenia (jedno w linii):</label>
+                        <textarea id="strengthExercises" placeholder="np.&#10;Wyciskanie sztangi - 4x8 x 80kg&#10;Martwy ciąg - 3x5 x 100kg&#10;Przysiady - 4x10 x 70kg" rows="5"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="strengthIntensity">Ocena intensywności (1-10):</label>
+                        <input type="range" id="strengthIntensity" min="1" max="10" value="5">
+                        <span id="intensityValue">5</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="strengthNotes">Notatki:</label>
+                        <textarea id="strengthNotes" placeholder="Jak się czułeś, co można poprawić..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-full" onclick="addStrengthEntry()">✅ Dodaj trening</button>
+                
+                <div class="entries">
+                    <h3>Historia treningów</h3>
+                    <div id="strengthEntries"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Running Section -->
+        <div id="running" class="section">
+            <div class="section-header">
+                <h2>🏃 Trening biegowy</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="runningDate">Data biegu:</label>
+                            <input type="date" id="runningDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="runningDistance">Dystans (km):</label>
+                            <input type="number" id="runningDistance" step="0.1" min="0.1">
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="runningTime">Czas (minuty):</label>
+                            <input type="number" id="runningTime" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="runningPace">Tempo (min/km):</label>
+                            <input type="text" id="runningPace" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="runningType">Typ biegu:</label>
+                        <select id="runningType">
+                            <option value="łagodny">Bieg łagodny</option>
+                            <option value="interwałowy">Trening interwałowy</option>
+                            <option value="tempo">Bieg tempo</option>
+                            <option value="długi">Długi bieg</option>
+                            <option value="regeneracyjny">Bieg regeneracyjny</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="runningHeartRate">Średnie tętno:</label>
+                        <input type="number" id="runningHeartRate" min="60" max="220">
+                    </div>
+                    <div class="form-group">
+                        <label for="runningFeeling">Ocena samopoczucia (1-10):</label>
+                        <input type="range" id="runningFeeling" min="1" max="10" value="5">
+                        <span id="feelingValue">5</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="runningWeather">Warunki pogodowe:</label>
+                        <input type="text" id="runningWeather" placeholder="np. słonecznie, 20°C, wiatr">
+                    </div>
+                    <div class="form-group">
+                        <label for="runningNotes">Notatki:</label>
+                        <textarea id="runningNotes" placeholder="Trasa, odczucia, problemy..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-full" onclick="addRunningEntry()">✅ Dodaj bieg</button>
+                
+                <div class="entries">
+                    <h3>Historia biegów</h3>
+                    <div id="runningEntries"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Food Section -->
+        <div id="food" class="section">
+            <div class="section-header">
+                <h2>🍎 Dziennik żywieniowy</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="foodDate">Data:</label>
+                            <input type="date" id="foodDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="foodMeal">Posiłek:</label>
+                            <select id="foodMeal">
+                                <option value="śniadanie">Śniadanie</option>
+                                <option value="II śniadanie">II śniadanie</option>
+                                <option value="obiad">Obiad</option>
+                                <option value="podwieczorek">Podwieczorek</option>
+                                <option value="kolacja">Kolacja</option>
+                                <option value="przekąska">Przekąska</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="foodDescription">Opis posiłku:</label>
+                        <textarea id="foodDescription" placeholder="Co jadłeś/jadłaś..." rows="3"></textarea>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="foodCalories">Kalorie (przybliżone):</label>
+                            <input type="number" id="foodCalories" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="foodHealth">Ocena zdrowego wyboru (1-10):</label>
+                            <input type="range" id="foodHealth" min="1" max="10" value="5">
+                            <span id="healthValue">5</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="foodNotes">Notatki:</label>
+                        <textarea id="foodNotes" placeholder="Jak się czułeś po posiłku, alergie..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-full" onclick="addFoodEntry()">✅ Dodaj posiłek</button>
+                
+                <div class="entries">
+                    <h3>Historia posiłków</h3>
+                    <div id="foodEntries"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div id="notes" class="section">
+            <div class="section-header">
+                <h2>📝 Notatki osobiste</h2>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="noteDate">Data:</label>
+                        <input type="date" id="noteDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="noteCategory">Kategoria:</label>
+                        <select id="noteCategory">
+                            <option value="zdrowie">Zdrowie</option>
+                            <option value="trening">Trening</option>
+                            <option value="samopoczucie">Samopoczucie</option>
+                            <option value="cele">Cele</option>
+                            <option value="motywacja">Motywacja</option>
+                            <option value="inne">Inne</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="noteTitle">Tytuł:</label>
+                        <input type="text" id="noteTitle" placeholder="Krótki tytuł notatki">
+                    </div>
+                    <div class="form-group">
+                        <label for="noteContent">Treść:</label>
+                        <textarea id="noteContent" rows="6" placeholder="Twoja notatka..."></textarea>
+                    </div>
+                </div>
+                <button class="btn btn-full" onclick="addNote()">✅ Dodaj notatkę</button>
+                
+                <div class="entries">
+                    <h3>Twoje notatki</h3>
+                    <div id="notesEntries"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Czy na pewno chcesz usunąć ten wpis?</h3>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" id="confirmDeleteBtn">Tak, usuń</button>
+                <button class="btn" id="cancelDeleteBtn">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // MongoDB configuration (informational only, not for direct browser use)
+        // This should be handled on a server-side for security reasons.
+        let mongoConfig = {
+            connectionString: 'mongodb+srv://track:8GscnmtE0XwyLHsA@track.53zk2pj.mongodb.net/?retryWrites=true&w=majority&appName=track', 
+            dbName: 'healthTracker',
+            collections: {
+                teeth: 'teethBrushing',
+                strength: 'strengthTraining',
+                running: 'runningLog',
+                food: 'foodDiary',
+                notes: 'personalNotes'
+            }
+        };
+
+        // Local data storage (fallback and primary source for front-end)
+        let localData = {
+            teeth: JSON.parse(localStorage.getItem('teeth') || '[]'),
+            strength: JSON.parse(localStorage.getItem('strength') || '[]'),
+            running: JSON.parse(localStorage.getItem('running') || '[]'),
+            food: JSON.parse(localStorage.getItem('food') || '[]'),
+            notes: JSON.parse(localStorage.getItem('notes') || '[]')
+        };
+
+        // Variables for confirmation modal
+        let deleteCallback = null;
+
+        // Initialize the app after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setCurrentDates();
+            loadAllData();
+            updateDashboard();
+            setupEventListeners();
+            setupPWA(); // PWA settings
+            createParticles(); // Create background particles
+        });
+
+        // Function to create animated background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = `${Math.random() * 8 + 4}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 6}s`;
+                particle.style.animationDuration = `${Math.random() * 5 + 3}s`;
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Function to set current dates in form fields
+        function setCurrentDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const now = new Date().toISOString().slice(0, 16);
+            
+            document.getElementById('teethDateTime').value = now;
+            document.getElementById('strengthDate').value = today;
+            document.getElementById('runningDate').value = today;
+            document.getElementById('foodDate').value = today;
+            document.getElementById('noteDate').value = today;
+        }
+
+        // Function to set up event listeners
+        function setupEventListeners() {
+            // Automatic calculation of running pace
+            document.getElementById('runningDistance').addEventListener('input', calculatePace);
+            document.getElementById('runningTime').addEventListener('input', calculatePace);
+            
+            // Update slider values
+            document.getElementById('strengthIntensity').addEventListener('input', function(e) {
+                document.getElementById('intensityValue').textContent = e.target.value;
+            });
+            
+            document.getElementById('runningFeeling').addEventListener('input', function(e) {
+                document.getElementById('feelingValue').textContent = e.target.value;
+            });
+            
+            document.getElementById('foodHealth').addEventListener('input', function(e) {
+                document.getElementById('healthValue').textContent = e.target.value;
+            });
+
+            // Handle confirmation modal
+            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+                if (deleteCallback) {
+                    deleteCallback(true);
+                }
+                document.getElementById('confirmationModal').style.display = 'none';
+            });
+
+            document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+                if (deleteCallback) {
+                    deleteCallback(false);
+                }
+                document.getElementById('confirmationModal').style.display = 'none';
+            });
+        }
+
+        // Function to calculate running pace
+        function calculatePace() {
+            const distance = parseFloat(document.getElementById('runningDistance').value);
+            const time = parseFloat(document.getElementById('runningTime').value);
+            
+            if (distance > 0 && time > 0) {
+                const pace = time / distance;
+                const minutes = Math.floor(pace);
+                const seconds = Math.round((pace - minutes) * 60);
+                document.getElementById('runningPace').value = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                document.getElementById('runningPace').value = '';
+            }
+        }
+
+        // Function to show sections
+        function showSection(sectionId, clickedButton) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Mark active button
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
+            
+            // Refresh data for the section
+            if (sectionId === 'dashboard') {
+                updateDashboard();
+            } else {
+                loadSectionData(sectionId);
+            }
+        }
+
+        // Functions to add entries
+        function addTeethEntry() {
+            const datetimeInput = document.getElementById('teethDateTime');
+            const timeInput = document.getElementById('teethTime');
+            const durationInput = document.getElementById('teethDuration');
+            const notesInput = document.getElementById('teethNotes');
+
+            if (!datetimeInput.value || !durationInput.value) {
+                showMessage('Proszę wypełnić wszystkie wymagane pola (Data i godzina, Czas mycia)!', 'error');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                datetime: datetimeInput.value,
+                time: timeInput.value,
+                duration: parseInt(durationInput.value),
+                notes: notesInput.value,
+                timestamp: new Date().toISOString() // Exact time of addition
+            };
+            
+            localData.teeth.unshift(entry); // Add to the beginning of the array
+            saveToStorage('teeth');
+            clearForm('teeth');
+            loadSectionData('teeth');
+            updateDashboard(); // Update dashboard after adding entry
+            showMessage('Wpis o myciu zębów został dodany pomyślnie!', 'success');
+        }
+
+        function addStrengthEntry() {
+            const dateInput = document.getElementById('strengthDate');
+            const durationInput = document.getElementById('strengthDuration');
+            const musclesSelect = document.getElementById('strengthMuscles');
+            const exercisesInput = document.getElementById('strengthExercises');
+            const intensityInput = document.getElementById('strengthIntensity');
+            const notesInput = document.getElementById('strengthNotes');
+
+            if (!dateInput.value || !durationInput.value || musclesSelect.selectedOptions.length === 0 || !exercisesInput.value) {
+                showMessage('Proszę wypełnić wszystkie wymagane pola (Data, Czas, Partie mięśniowe, Ćwiczenia)!', 'error');
+                return;
+            }
+
+            const selectedMuscles = Array.from(musclesSelect.selectedOptions).map(option => option.value);
+            
+            const entry = {
+                id: Date.now(),
+                date: dateInput.value,
+                duration: parseInt(durationInput.value),
+                muscles: selectedMuscles,
+                exercises: exercisesInput.value,
+                intensity: parseInt(intensityInput.value),
+                notes: notesInput.value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localData.strength.unshift(entry);
+            saveToStorage('strength');
+            clearForm('strength');
+            loadSectionData('strength');
+            updateDashboard();
+            showMessage('Trening siłowy został dodany pomyślnie!', 'success');
+        }
+
+        function addRunningEntry() {
+            const dateInput = document.getElementById('runningDate');
+            const distanceInput = document.getElementById('runningDistance');
+            const timeInput = document.getElementById('runningTime');
+            const paceInput = document.getElementById('runningPace');
+            const typeSelect = document.getElementById('runningType');
+            const heartRateInput = document.getElementById('runningHeartRate');
+            const feelingInput = document.getElementById('runningFeeling');
+            const weatherInput = document.getElementById('runningWeather');
+            const notesInput = document.getElementById('runningNotes');
+
+            if (!dateInput.value || !distanceInput.value || !timeInput.value) {
+                showMessage('Proszę wypełnić wszystkie wymagane pola (Data, Dystans, Czas)!', 'error');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                date: dateInput.value,
+                distance: parseFloat(distanceInput.value),
+                time: parseInt(timeInput.value),
+                pace: paceInput.value,
+                type: typeSelect.value,
+                heartRate: parseInt(heartRateInput.value) || null,
+                feeling: parseInt(feelingInput.value),
+                weather: weatherInput.value,
+                notes: notesInput.value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localData.running.unshift(entry);
+            saveToStorage('running');
+            clearForm('running');
+            loadSectionData('running');
+            updateDashboard();
+            showMessage('Bieg został dodany pomyślnie!', 'success');
+        }
+
+        function addFoodEntry() {
+            const dateInput = document.getElementById('foodDate');
+            const mealSelect = document.getElementById('foodMeal');
+            const descriptionInput = document.getElementById('foodDescription');
+            const caloriesInput = document.getElementById('foodCalories');
+            const healthInput = document.getElementById('foodHealth');
+            const notesInput = document.getElementById('foodNotes');
+
+            if (!dateInput.value || !mealSelect.value || !descriptionInput.value) {
+                showMessage('Proszę wypełnić wszystkie wymagane pola (Data, Posiłek, Opis)!', 'error');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                date: dateInput.value,
+                meal: mealSelect.value,
+                description: descriptionInput.value,
+                calories: parseInt(caloriesInput.value) || null,
+                healthRating: parseInt(healthInput.value),
+                notes: notesInput.value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localData.food.unshift(entry);
+            saveToStorage('food');
+            clearForm('food');
+            loadSectionData('food');
+            updateDashboard();
+            showMessage('Posiłek został dodany pomyślnie!', 'success');
+        }
+
+        function addNote() {
+            const dateInput = document.getElementById('noteDate');
+            const categorySelect = document.getElementById('noteCategory');
+            const titleInput = document.getElementById('noteTitle');
+            const contentInput = document.getElementById('noteContent');
+
+            if (!dateInput.value || !titleInput.value || !contentInput.value) {
+                showMessage('Proszę wypełnić wszystkie wymagane pola (Data, Tytuł, Treść)!', 'error');
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                date: dateInput.value,
+                category: categorySelect.value,
+                title: titleInput.value,
+                content: contentInput.value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localData.notes.unshift(entry);
+            saveToStorage('notes');
+            clearForm('notes');
+            loadSectionData('notes');
+            updateDashboard();
+            showMessage('Notatka została dodana pomyślnie!', 'success');
+        }
+
+        // Function to clear forms
+        function clearForm(type) {
+            const forms = {
+                teeth: ['teethDateTime', 'teethTime', 'teethDuration', 'teethNotes'],
+                strength: ['strengthDate', 'strengthDuration', 'strengthMuscles', 'strengthExercises', 'strengthIntensity', 'strengthNotes'],
+                running: ['runningDate', 'runningDistance', 'runningTime', 'runningPace', 'runningType', 'runningHeartRate', 'runningFeeling', 'runningWeather', 'runningNotes'],
+                food: ['foodDate', 'foodMeal', 'foodDescription', 'foodCalories', 'foodHealth', 'foodNotes'],
+                notes: ['noteDate', 'noteCategory', 'noteTitle', 'noteContent']
+            };
+            
+            if (forms[type]) {
+                forms[type].forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        if (field.type === 'checkbox' || field.type === 'radio') {
+                            field.checked = false;
+                        } else if (field.tagName === 'SELECT') {
+                            if (field.multiple) {
+                                Array.from(field.options).forEach(option => option.selected = false);
+                            } else {
+                                field.selectedIndex = 0; // Select the first option
+                            }
+                        } else {
+                            field.value = '';
+                        }
+                    }
+                });
+            }
+            
+            setCurrentDates(); // Set dates to current after clearing
+            // Reset slider values
+            if (type === 'strength') document.getElementById('intensityValue').textContent = document.getElementById('strengthIntensity').value;
+            if (type === 'running') document.getElementById('feelingValue').textContent = document.getElementById('runningFeeling').value;
+            if (type === 'food') document.getElementById('healthValue').textContent = document.getElementById('foodHealth').value;
+        }
+
+        // Function to save data to LocalStorage
+        function saveToStorage(type) {
+            localStorage.setItem(type, JSON.stringify(localData[type]));
+        }
+
+        // Function to load all data from LocalStorage
+        function loadAllData() {
+            Object.keys(localData).forEach(type => {
+                loadSectionData(type);
+            });
+        }
+
+        // Function to load and display data for a specific section
+        function loadSectionData(type) {
+            const containers = {
+                teeth: 'teethEntries',
+                strength: 'strengthEntries',
+                running: 'runningEntries',
+                food: 'foodEntries',
+                notes: 'notesEntries'
+            };
+            
+            const container = document.getElementById(containers[type]);
+            if (!container) return;
+            
+            const data = localData[type] || [];
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p class="no-entries">Brak wpisów do wyświetlenia.</p>';
+                return;
+            }
+            
+            container.innerHTML = data.map(entry => {
+                switch(type) {
+                    case 'teeth':
+                        return `
+                            <div class="entry">
+                                <div class="entry-date">${formatDate(entry.datetime)} - ${entry.time}</div>
+                                <p><strong>Czas mycia:</strong> ${entry.duration} min</p>
+                                ${entry.notes ? `<p><strong>Notatki:</strong> ${entry.notes}</p>` : ''}
+                                <button class="btn btn-danger" onclick="confirmAndDeleteEntry('teeth', ${entry.id})">Usuń</button>
+                            </div>
+                        `;
+                    case 'strength':
+                        return `
+                            <div class="entry">
+                                <div class="entry-date">${formatDate(entry.date)}</div>
+                                <p><strong>Czas:</strong> ${entry.duration} min | <strong>Intensywność:</strong> ${entry.intensity}/10</p>
+                                <p><strong>Partie mięśniowe:</strong> ${entry.muscles.join(', ')}</p>
+                                <p><strong>Ćwiczenia:</strong></p>
+                                <pre style="white-space: pre-wrap; font-family: inherit;">${entry.exercises}</pre>
+                                ${entry.notes ? `<p><strong>Notatki:</strong> ${entry.notes}</p>` : ''}
+                                <button class="btn btn-danger" onclick="confirmAndDeleteEntry('strength', ${entry.id})">Usuń</button>
+                            </div>
+                        `;
+                    case 'running':
+                        return `
+                            <div class="entry">
+                                <div class="entry-date">${formatDate(entry.date)} - ${entry.type}</div>
+                                <p><strong>Dystans:</strong> ${entry.distance} km | <strong>Czas:</strong> ${entry.time} min | <strong>Tempo:</strong> ${entry.pace}</p>
+                                ${entry.heartRate ? `<p><strong>Średnie tętno:</strong> ${entry.heartRate} bpm</p>` : ''}
+                                <p><strong>Samopoczucie:</strong> ${entry.feeling}/10</p>
+                                ${entry.weather ? `<p><strong>Pogoda:</strong> ${entry.weather}</p>` : ''}
+                                ${entry.notes ? `<p><strong>Notatki:</strong> ${entry.notes}</p>` : ''}
+                                <button class="btn btn-danger" onclick="confirmAndDeleteEntry('running', ${entry.id})">Usuń</button>
+                            </div>
+                        `;
+                    case 'food':
+                        return `
+                            <div class="entry">
+                                <div class="entry-date">${formatDate(entry.date)} - ${entry.meal}</div>
+                                <p><strong>Opis:</strong> ${entry.description}</p>
+                                ${entry.calories ? `<p><strong>Kalorie:</strong> ${entry.calories} kcal</p>` : ''}
+                                <p><strong>Ocena zdrowotna:</strong> ${entry.healthRating}/10</p>
+                                ${entry.notes ? `<p><strong>Notatki:</strong> ${entry.notes}</p>` : ''}
+                                <button class="btn btn-danger" onclick="confirmAndDeleteEntry('food', ${entry.id})">Usuń</button>
+                            </div>
+                        `;
+                    case 'notes':
+                        return `
+                            <div class="entry">
+                                <div class="entry-date">${formatDate(entry.date)} - ${entry.category}</div>
+                                <h4>${entry.title}</h4>
+                                <p style="white-space: pre-wrap;">${entry.content}</p>
+                                <button class="btn btn-danger" onclick="confirmAndDeleteEntry('notes', ${entry.id})">Usuń</button>
+                            </div>
+                        `;
+                    default:
+                        return '';
+                }
+            }).join('');
+        }
+
+        // Function to display the delete confirmation modal
+        function confirmAndDeleteEntry(type, id) {
+            document.getElementById('confirmationModal').style.display = 'flex';
+            deleteCallback = (confirmed) => {
+                if (confirmed) {
+                    deleteEntry(type, id);
+                }
+            };
+        }
+
+        // Function to delete an entry
+        function deleteEntry(type, id) {
+            localData[type] = localData[type].filter(entry => entry.id !== id);
+            saveToStorage(type);
+            loadSectionData(type);
+            updateDashboard();
+            showMessage('Wpis został usunięty pomyślnie!', 'success');
+        }
+
+        // Function to format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            if (isNaN(date)) {
+                return dateString; // Return original string if format is invalid
+            }
+            return date.toLocaleDateString('pl-PL') + ' ' + date.toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        // Function to update the dashboard
+        function updateDashboard() {
+            updateTeethStreak();
+            updateStrengthCount();
+            updateRunningDistance();
+            updateNotesCount();
+            generateAIAnalysis();
+        }
+
+        // Function to update teeth brushing streak
+        function updateTeethStreak() {
+            const teethData = localData.teeth;
+            let streak = 0;
+            
+            if (teethData.length > 0) {
+                // Sort data from newest to oldest
+                const sortedData = teethData.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+                
+                let currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0); // Set to the beginning of the day
+
+                // Check if the first entry is from today or yesterday (if it's already a new day)
+                let firstEntryDate = new Date(sortedData[0].datetime);
+                firstEntryDate.setHours(0, 0, 0, 0);
+
+                // If the last entry is from today
+                if (firstEntryDate.getTime() === currentDate.getTime()) {
+                    streak = 1;
+                } else {
+                    // If the last entry is from yesterday and no entry today yet
+                    const yesterday = new Date(currentDate);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (firstEntryDate.getTime() === yesterday.getTime()) {
+                         streak = 1; // Start streak from yesterday
+                    } else {
+                        document.getElementById('teethStreak').textContent = 0;
+                        return;
+                    }
+                }
+
+                for (let i = 0; i < sortedData.length; i++) {
+                    const entryDate = new Date(sortedData[i].datetime);
+                    entryDate.setHours(0, 0, 0, 0);
+
+                    // If the entry is from the current day of the streak
+                    if (entryDate.getTime() === currentDate.getTime()) {
+                        // Continue
+                    } else if (entryDate.getTime() === (new Date(currentDate.setDate(currentDate.getDate() - 1))).getTime()) {
+                        // If the entry is from the previous day, increase streak
+                        streak++;
+                    } else {
+                        // If there is a break in the streak
+                        break;
+                    }
+                }
+            }
+            
+            document.getElementById('teethStreak').textContent = streak;
+        }
+
+        // Function to update strength training count
+        function updateStrengthCount() {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const monthlyCount = localData.strength.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+            }).length;
+            
+            document.getElementById('strengthCount').textContent = monthlyCount;
+        }
+
+        // Function to update running distance
+        function updateRunningDistance() {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const monthlyDistance = localData.running
+                .filter(entry => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+                })
+                .reduce((total, entry) => total + (entry.distance || 0), 0);
+            
+            document.getElementById('runningDistance').textContent = monthlyDistance.toFixed(1);
+        }
+
+        // Function to update notes count
+        function updateNotesCount() {
+            document.getElementById('notesCount').textContent = localData.notes.length;
+        }
+
+        // Function to generate AI analysis and recommendations
+        async function generateAIAnalysis() {
+            const analysisElement = document.getElementById('aiAnalysis');
+            const recommendationsElement = document.getElementById('recommendations');
+            
+            analysisElement.textContent = 'Ładowanie analizy...';
+            recommendationsElement.textContent = 'Przygotowywanie rekomendacji...';
+
+            const teethStreak = parseInt(document.getElementById('teethStreak').textContent);
+            const strengthCount = parseInt(document.getElementById('strengthCount').textContent);
+            const runningDistance = parseFloat(document.getElementById('runningDistance').textContent);
+            const notesCount = parseInt(document.getElementById('notesCount').textContent);
+
+            const prompt = `Proszę o krótką analizę danych zdrowotnych i rekomendacje.
+            Dane:
+            - Dni mycia zębów z rzędu: ${teethStreak}
+            - Treningów siłowych w tym miesiącu: ${strengthCount}
+            - Przebiegnięte km w tym miesiącu: ${runningDistance}
+            - Liczba notatek: ${notesCount}
+
+            Na podstawie tych danych:
+            1. Stwórz krótką analizę, co idzie dobrze, a co wymaga poprawy.
+            2. Wygeneruj listę konkretnych, praktycznych rekomendacji w punktach, aby poprawić zdrowie i nawyki, bazując na podanych danych.
+            Proszę o odpowiedź w języku polskim.`;
+
+            try {
+                // Simulate connection to Gemini API (in reality, you would need a backend)
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "analysis": { "type": "STRING" },
+                                "recommendations": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                }
+                            },
+                            "propertyOrdering": ["analysis", "recommendations"]
+                        }
+                    }
+                };
+
+                // Use an empty API key, Canvas will automatically provide it
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    analysisElement.textContent = jsonResponse.analysis;
+                    recommendationsElement.innerHTML = jsonResponse.recommendations.map(rec => `• ${rec}`).join('<br>');
+                } else {
+                    analysisElement.textContent = 'Nie udało się wygenerować analizy AI.';
+                    recommendationsElement.textContent = 'Brak rekomendacji.';
+                }
+
+            } catch (error) {
+                console.error("Błąd podczas generowania analizy AI:", error);
+                analysisElement.textContent = 'Błąd podczas ładowania analizy AI.';
+                recommendationsElement.textContent = 'Spróbuj ponownie później.';
+            }
+        }
+
+        // Function to display messages (success/error)
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            // Add message to the top of the active section
+            const activeSection = document.querySelector('.section.active');
+            if (activeSection) {
+                activeSection.insertBefore(messageDiv, activeSection.firstChild);
+            } else {
+                // If no active section, add to the main container
+                document.querySelector('.container').insertBefore(messageDiv, document.querySelector('.container').firstChild);
+            }
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+
+        // PWA configuration - Service Worker registration (optional, but recommended for full PWA)
+        function setupPWA() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        })
+                        .catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+        }
+
+        // Export data to JSON
+        function exportData() {
+            const dataToExport = {
+                exported: new Date().toISOString(),
+                data: localData
+            };
+            
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `health-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage('Dane zostały wyeksportowane do pliku JSON!', 'success');
+        }
+
+        // Import data from JSON
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.data) {
+                        // Deep clone to avoid reference issues
+                        localData = JSON.parse(JSON.stringify(importedData.data));
+                        Object.keys(localData).forEach(type => {
+                            saveToStorage(type);
+                        });
+                        loadAllData();
+                        updateDashboard();
+                        showMessage('Dane zostały zaimportowane pomyślnie!', 'success');
+                    } else {
+                        showMessage('Nieprawidłowy format pliku JSON. Brakuje klucza "data".', 'error');
+                    }
+                } catch (error) {
+                    console.error("Błąd podczas importu danych:", error);
+                    showMessage('Błąd podczas importu danych! Upewnij się, że plik jest poprawnym formatem JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
